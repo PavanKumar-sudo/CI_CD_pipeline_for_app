@@ -6,9 +6,6 @@ on:
     paths:
       - 'helm-chart/**'
 
-env:
-  HELM_RELEASE_NAME: loginapp
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -43,7 +40,7 @@ jobs:
     needs: deploy
     uses: ./.github/workflows/deploy-app.yaml
     with:
-      helm_release: ${{ env.HELM_RELEASE_NAME }}
+      helm_release: loginapp
       image_tag: ${{ needs.deploy.outputs.image_tag }}
     secrets: inherit
 
@@ -51,6 +48,6 @@ jobs:
     needs: helm-deploy
     uses: ./.github/workflows/notify-discord.yaml
     with:
-      status: ${{ job.status }}
+      status: ${{ needs.helm-deploy.result }}
       scope: Helm Chart Deploy
     secrets: inherit
