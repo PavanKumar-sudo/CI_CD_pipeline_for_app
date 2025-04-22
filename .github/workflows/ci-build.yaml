@@ -24,7 +24,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
-      - name: Install backend dependencies
+      - name: Install backend deps
         working-directory: ./backend
         run: npm ci
 
@@ -35,6 +35,10 @@ jobs:
   docker:
     runs-on: ubuntu-22.04
     needs: test
+
+    outputs:
+      image_tag: ${{ steps.save_tag.outputs.image_tag }}
+
     steps:
       - uses: actions/checkout@v4.2.2
 
@@ -48,16 +52,17 @@ jobs:
           docker build -t $DOCKER_IMAGE:latest -f backend/Dockerfile .
           docker tag $DOCKER_IMAGE:latest $DOCKER_IMAGE:${{ github.sha }}
 
-      - name: Push image to Docker Hub
+      - name: Push image
         run: |
           docker push $DOCKER_IMAGE:latest
           docker push $DOCKER_IMAGE:${{ github.sha }}
 
-      - name: Save image tag to file
-        run: echo "${{ github.sha }}" > image-tag.txt
+      - name: Save image tag to output
+        id: save_tag
+        run: echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
 
-      - name: Confirm image tag file exists
-        run: ls -l image-tag.txt
+      - name: Save image tag as file (for logs)
+        run: echo "${{ github.sha }}" > image-tag.txt
 
       - uses: actions/upload-artifact@v4
         with:
@@ -72,10 +77,10 @@ jobs:
         run: |
           curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-      - name: Scan Docker image for vulnerabilities
-        run: trivy image --severity HIGH,CRITICAL $DOCKER_IMAGE:${{ github.sha }} > trivy-report.txt
+      - name: Scan for vulnerabilities
+        run: trivy image --severity HIGH,CRITICAL $DOCKER_IMAGE:${{ needs.docker.outputs.image_tag }} > trivy-report.txt
 
-      - name: Upload Trivy report to GitHub summary
+      - name: Upload Trivy report to summary
         run: |
           echo "### Trivy Report" >> $GITHUB_STEP_SUMMARY
           cat trivy-report.txt >> $GITHUB_STEP_SUMMARY
@@ -85,7 +90,7 @@ jobs:
     uses: ./.github/workflows/deploy-app.yaml
     with:
       helm_release: loginapp
-      image_tag: ${{ github.sha }}
+      image_tag: ${{ needs.docker.outputs.image_tag }}
     secrets: inherit
 
   notify:
@@ -95,3 +100,15 @@ jobs:
       status: ${{ needs.deploy.result }}
       scope: Build & Deploy
     secrets: inherit
+
+  trigger-helm-deploy:
+    needs: docker
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Trigger Helm Chart Only Workflow
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: ci-deploy.yaml
+          ref: main
+          inputs: |
+            image_tag=${{ needs.docker.outputs.image_tag }}
