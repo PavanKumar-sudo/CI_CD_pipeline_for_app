@@ -9,7 +9,6 @@ on:
 
 env:
   NODE_VERSION: 18
-  HELM_RELEASE_NAME: loginapp
   DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/backend
 
 jobs:
@@ -83,7 +82,7 @@ jobs:
     needs: trivy-scan
     uses: ./.github/workflows/deploy-app.yaml
     with:
-      helm_release: ${{ env.HELM_RELEASE_NAME }}
+      helm_release: loginapp
       image_tag: ${{ github.sha }}
     secrets: inherit
 
@@ -91,6 +90,6 @@ jobs:
     needs: deploy
     uses: ./.github/workflows/notify-discord.yaml
     with:
-      status: ${{ job.status }}
+      status: ${{ needs.deploy.result }}
       scope: Build & Deploy
     secrets: inherit
