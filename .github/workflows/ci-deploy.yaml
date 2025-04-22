@@ -1,0 +1,56 @@
+name: CI - Helm Chart Only
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'helm-chart/**'
+
+env:
+  HELM_RELEASE_NAME: loginapp
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.13.3
+
+      - name: Download image tag
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          name: image-tag
+          path: .
+
+      - name: Read tag
+        id: tag
+        run: |
+          if [ -f image-tag.txt ]; then
+            echo "IMAGE_TAG=$(cat image-tag.txt)" >> $GITHUB_OUTPUT
+          else
+            echo "❌ No image tag found"
+            exit 1
+          fi
+
+    outputs:
+      image_tag: ${{ steps.tag.outputs.IMAGE_TAG }}
+
+  helm-deploy:
+    needs: deploy
+    uses: ./.github/workflows/deploy-app.yaml
+    with:
+      helm_release: ${{ env.HELM_RELEASE_NAME }}
+      image_tag: ${{ needs.deploy.outputs.image_tag }}
+    secrets: inherit
+
+  notify:
+    needs: helm-deploy
+    uses: ./.github/workflows/notify-discord.yaml
+    with:
+      status: ${{ job.status }}
+      scope: Helm Chart Deploy
+    secrets: inherit

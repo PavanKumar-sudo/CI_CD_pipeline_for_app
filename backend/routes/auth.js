@@ -5,7 +5,8 @@ const path = require('path');
 const pool = require('../db');
 
 // 🔁 Helper to resolve frontend view path
-const viewsPath = path.join(__dirname, '..', '..', 'frontend', 'views');
+// ✅ New (correct path inside Docker)
+const viewsPath = path.join(__dirname, '..', 'views');
 
 // 🌐 Redirect base URL to login
 router.get('/', (req, res) => {

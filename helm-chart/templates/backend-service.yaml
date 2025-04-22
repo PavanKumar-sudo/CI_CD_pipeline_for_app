@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.backend.name }}
+  labels:
+    app: {{ .Values.backend.name }}   # Matches selector and ServiceMonitor
+spec:
+  selector:
+    app: {{ .Values.backend.name }}   # Must match pod labels in deployment
+  ports:
+    - name: http                      # Name must match in ServiceMonitor
+      port: {{ .Values.backend.ports.service }}
+      targetPort: {{ .Values.backend.ports.container }}

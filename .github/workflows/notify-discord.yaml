@@ -1,0 +1,26 @@
+name: Notify Discord
+
+on:
+  workflow_call:
+    inputs:
+      status:
+        required: true
+        type: string
+      scope:
+        required: true
+        type: string
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Notification
+        run: |
+          STATUS_EMOJI="✅"
+          if [[ "${{ inputs.status }}" == "failure" ]]; then
+            STATUS_EMOJI="❌"
+          fi
+
+          curl -X POST -H "Content-Type: application/json" \
+            -d "{\"content\": \"$STATUS_EMOJI CI Job \`${{ inputs.scope }}\` ${STATUS_EMOJI} - Status: \`${{ inputs.status }}\` in \`${{ github.repository }}\`\"}" \
+            ${{ secrets.DISCORD_WEBHOOK }}

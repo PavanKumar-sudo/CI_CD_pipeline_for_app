@@ -1,0 +1,32 @@
+# helm-chart/templates/alertmanager-config.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: loginapp-alertmanager-config
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: alertmanager
+    app.kubernetes.io/component: alertmanager
+    app.kubernetes.io/instance: loginapp
+    app.kubernetes.io/managed-by: Helm
+type: Opaque
+stringData:
+  alertmanager.yaml: |
+    global:
+      smtp_smarthost: 'smtp.gmail.com:587'
+      smtp_from: {{ .Values.smtpAuth.username | quote }}
+      smtp_auth_username: {{ .Values.smtpAuth.username | quote }}
+      smtp_auth_password: {{ .Values.smtpAuth.password | quote }}
+
+    route:
+      receiver: 'email'
+      group_by: ['alertname']
+      group_wait: 10s
+      group_interval: 30s
+      repeat_interval: 2m
+
+    receivers:
+      - name: 'email'
+        email_configs:
+          - to: {{ .Values.smtpAuth.username | quote }}
+            send_resolved: true

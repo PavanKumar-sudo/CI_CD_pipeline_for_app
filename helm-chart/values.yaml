@@ -1,0 +1,122 @@
+global:
+  namespace: monitoring
+  domain: go-web-app.local  # ✅ Can be overridden via --set in CI/CD
+
+backend:
+  image:
+    repository: pavankumar23/backend
+    tag: v1.0.0              # ✅ Will be overridden in CI with --set
+    pullPolicy: Always       # ✅ Forces latest image pull in CI/CD
+
+  name: backend
+  secretName: backend-secret
+  sessionSecret: secret123   # 🔄 Default, overridden securely in CI/CD
+
+  replicas: 2
+
+  ports:
+    container: 3001
+    service: 3001
+
+  metrics:
+    path: /metrics
+    interval: 15s
+
+  env:
+    PORT: "3001"
+
+  resources:
+    limits:
+      cpu: "500m"
+      memory: "256Mi"
+    requests:
+      cpu: "200m"
+      memory: "128Mi"
+
+  probes:
+    liveness:
+      enabled: true
+      path: /healthz
+      port: 3001
+    readiness:
+      enabled: true
+      path: /ready
+      port: 3001
+
+  alerts:
+    httpRequestRateThreshold: 0.05
+
+mysql:
+  name: mysql
+  serviceName: mysql
+  image: mysql:5.7
+  port: 3306
+
+  rootPassword: Masters@2026
+  rootPasswordSecret:
+    name: mysql-secret
+    key: root-password
+
+  database: loginapp
+
+  config:
+    enabled: false
+    file: custom.cnf
+
+mysqlExporter:
+  name: mysql-exporter
+  secretName: mysql-exporter-secret
+  serviceMonitorName: mysql-exporter
+  labels:
+    app: mysql-exporter
+  serviceMonitorInterval: 30s
+  enabled: true
+  alerts:
+    highConnections: 50
+  image:
+    repository: prom/mysqld-exporter
+    tag: latest
+  port: 9104
+
+ingress:
+  enabled: true
+  className: alb
+  host: "{{ .Values.global.domain }}"
+
+smtpAuth:
+  username: pavanvinjamuri212@gmail.com     # 🔄 Default, overridden in CI/CD
+  password: apppassword_from_ci_or_secret   # 🔄 Default, overridden in CI/CD
+
+kube-prometheus-stack:
+  grafana:
+    enabled: true
+    grafana.ini:
+      server:
+        root_url: "http://grafana.{{ .Values.global.domain }}"
+      smtp:
+        enabled: true
+        host: smtp.gmail.com:587
+        from_address: pavanvinjamuri212@gmail.com
+        startTLS_policy: "Always"
+
+  prometheus:
+    enabled: true
+    prometheusSpec:
+      externalUrl: "http://prometheus.{{ .Values.global.domain }}"
+      ruleSelector:
+        matchLabels:
+          release: loginapp
+      serviceMonitorSelector:
+        matchLabels:
+          release: loginapp
+      serviceMonitorNamespaceSelector:
+        matchNames:
+          - default
+          - monitoring
+
+  alertmanager:
+    enabled: true
+    alertmanagerSpec:
+      externalUrl: "http://alertmanager.{{ .Values.global.domain }}"
+      replicas: 1
+      configSecret: loginapp-alertmanager-config  # ✅ Loads config from rendered Secret

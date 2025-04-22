@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mysql-rules
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    release: loginapp
+spec:
+  groups:
+    - name: mysql.rules
+      rules:
+        - alert: MySQLHighConnections
+          expr: mysql_global_status_threads_connected > {{ .Values.mysqlExporter.alerts.highConnections }}
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High number of MySQL connections"
+            description: "More than 50 clients are connected to MySQL"
+
+        - alert: MySQLSlowQueries
+          expr: increase(mysql_global_status_slow_queries[5m]) > 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "MySQL Slow Queries Detected"
+            description: "At least 1 slow query occurred in the last 5 minutes"

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.mysqlExporter.name }}
+  labels:
+    app: {{ .Values.mysqlExporter.labels.app }}   # ✅ Fixed
+spec:
+  selector:
+    app: {{ .Values.mysqlExporter.labels.app }}   # ✅ Fixed
+  ports:
+    - name: http
+      port: {{ .Values.mysqlExporter.port }}
+      targetPort: {{ .Values.mysqlExporter.port }}

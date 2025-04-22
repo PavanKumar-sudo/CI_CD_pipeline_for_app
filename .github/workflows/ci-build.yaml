@@ -1,0 +1,96 @@
+name: CI - Build & Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+
+env:
+  NODE_VERSION: 18
+  HELM_RELEASE_NAME: loginapp
+  DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/backend
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend deps
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: ./backend
+        run: npm test
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and tag image
+        run: |
+          docker build -t $DOCKER_IMAGE:latest ./backend
+          docker tag $DOCKER_IMAGE:latest $DOCKER_IMAGE:${{ github.sha }}
+
+      - name: Push image
+        run: |
+          docker push $DOCKER_IMAGE:latest
+          docker push $DOCKER_IMAGE:${{ github.sha }}
+
+      - name: Save image tag
+        run: echo "${{ github.sha }}" > image-tag.txt
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: image-tag
+          path: image-tag.txt
+
+  trivy-scan:
+    runs-on: ubuntu-latest
+    needs: docker
+    steps:
+      - name: Install Trivy
+        run: |
+          sudo apt-get update && sudo apt-get install -y wget
+          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.48.4_Linux-64bit.deb
+          sudo dpkg -i trivy_0.48.4_Linux-64bit.deb
+
+      - name: Scan for vulnerabilities
+        run: trivy image --severity HIGH,CRITICAL $DOCKER_IMAGE:${{ github.sha }} > trivy-report.txt
+
+      - name: Upload Trivy report to summary
+        run: |
+          echo "### Trivy Report" >> $GITHUB_STEP_SUMMARY
+          cat trivy-report.txt >> $GITHUB_STEP_SUMMARY
+
+  deploy:
+    needs: trivy-scan
+    uses: ./.github/workflows/deploy-app.yaml
+    with:
+      helm_release: ${{ env.HELM_RELEASE_NAME }}
+      image_tag: ${{ github.sha }}
+    secrets: inherit
+
+  notify:
+    needs: deploy
+    uses: ./.github/workflows/notify-discord.yaml
+    with:
+      status: ${{ job.status }}
+      scope: Build & Deploy
+    secrets: inherit

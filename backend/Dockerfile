@@ -1,22 +1,20 @@
-# backend/Dockerfile
-
 FROM node:18
 
-# Set working directory inside container
 WORKDIR /app
 
 # Copy package files and install dependencies
-COPY ./backend/package*.json ./backend/
-RUN cd backend && npm install
+COPY ./backend/package*.json ./
+RUN npm install
 
-# Copy all backend source files to /app/backend
-COPY ./backend ./backend
+# ✅ Copy backend files
+COPY ./backend ./
 
-# Copy frontend views to /app/frontend
-COPY ./frontend ./frontend
+# ✅ Copy frontend views into expected /app/views
+# ✅ Copy static assets
+COPY ./backend/public ./public
 
-# Expose app port
+# ✅ Copy frontend views
+COPY ./frontend/views ./views
+
 EXPOSE 3001
-
-# Start app (assuming index.js is main file in backend/)
-CMD ["node", "backend/index.js"]
+CMD ["node", "server.js"]

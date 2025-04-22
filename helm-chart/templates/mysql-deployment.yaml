@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.mysql.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.mysql.name }}
+  template:
+    metadata:
+      labels:
+       app: {{ .Values.mysql.name }}
+    spec:
+      containers:
+      - name: mysql
+        image: {{ .Values.mysql.image }}
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+               name: mysql-secret
+               key: root-password
+
+        - name: MYSQL_DATABASE
+          value: {{ .Values.mysql.database }}
+        ports:
+        - containerPort: {{ .Values.mysql.port }}
+        volumeMounts:
+        - name: init-volume
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+      volumes:
+        - name: init-volume
+          configMap:
+            name: init-sql-config

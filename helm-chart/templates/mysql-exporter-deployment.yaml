@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.mysqlExporter.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.mysqlExporter.labels.app }} 
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.mysqlExporter.labels.app }}
+    spec:
+      containers:
+        - name: {{ .Values.mysqlExporter.name }}
+          image: "{{ .Values.mysqlExporter.image.repository }}:{{ .Values.mysqlExporter.image.tag }}"
+          args:
+            - "--config.my-cnf=/etc/mysql-exporter/my.cnf"
+          ports:
+            - name: http
+              containerPort: {{ .Values.mysqlExporter.port }}
+          volumeMounts:
+            - name: mycnf
+              mountPath: /etc/mysql-exporter
+              readOnly: true
+      volumes:
+        - name: mycnf
+          secret:
+            secretName: {{ .Values.mysqlExporter.secretName }}

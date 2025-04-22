@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: "{{ .Values.backend.name }}.rules"
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    release: loginapp
+spec:
+  groups:
+    - name: "{{ .Values.backend.name }}.rules"
+      rules:
+        - alert: HighHttpRequestRate
+          expr: sum(rate(http_requests_total[1m])) > {{ .Values.backend.alerts.httpRequestRateThreshold }}
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High number of HTTP requests to backend"
+            description: "Backend received more than 1 req/sec in the last minute."
+
+        - alert: HighBackendCPUUsage
+          expr: rate(process_cpu_seconds_total{container="{{ .Values.backend.name }}"}[2m]) > 0.8
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High CPU usage in backend"
+            description: "CPU usage > 80% for more than 2 minutes"

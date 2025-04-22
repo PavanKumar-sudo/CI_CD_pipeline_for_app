@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Values.mysqlExporter.serviceMonitorName }}
+  labels:
+    release: loginapp
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.mysqlExporter.labels.app }}   # ✅ Fixed
+  endpoints:
+    - port: http
+      interval: {{ .Values.mysqlExporter.serviceMonitorInterval }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.global.namespace }}

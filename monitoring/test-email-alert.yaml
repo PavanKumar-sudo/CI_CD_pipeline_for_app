@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: test-email-alert
+  namespace: monitoring
+  labels:
+    release: loginapp
+spec:
+  groups:
+    - name: test-alert-group
+      rules:
+        - alert: TestEmailAlert
+          expr: vector(1)
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "🔥 Test Email Alert"
+            description: "This is a test alert to verify Source links."

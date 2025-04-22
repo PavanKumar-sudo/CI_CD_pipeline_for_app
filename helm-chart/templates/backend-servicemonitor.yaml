@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: "{{ .Values.backend.name }}-servicemonitor"
+  labels:
+    release: loginapp  # Match Prometheus ruleSelector
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.backend.name }}
+  namespaceSelector:
+    matchNames:
+      - monitoring
+  endpoints:
+    - port: http
+      path: {{ .Values.backend.metrics.path }}
+      interval: {{ .Values.backend.metrics.interval }}
