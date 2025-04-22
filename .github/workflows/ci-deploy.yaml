@@ -5,37 +5,32 @@ on:
     branches: [main]
     paths:
       - 'helm-chart/**'
-      - '.github/workflows/ci-deploy.yaml'
+
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy'
+        required: true
+        type: string
 
 jobs:
   deploy:
     runs-on: ubuntu-22.04
+    outputs:
+      image_tag: ${{ steps.set.outputs.image_tag }}
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup Helm
         uses: azure/setup-helm@v3
         with:
           version: v3.13.3
 
-      - name: Download image tag
-        uses: dawidd6/action-download-artifact@v2
-        with:
-          name: image-tag
-          path: .
-
-      - name: Read tag
-        id: tag
-        run: |
-          if [ -f image-tag.txt ]; then
-            echo "IMAGE_TAG=$(cat image-tag.txt)" >> $GITHUB_OUTPUT
-          else
-            echo "❌ No image tag found"
-            exit 1
-          fi
-
-    outputs:
-      image_tag: ${{ steps.tag.outputs.IMAGE_TAG }}
+      - name: Set image tag from input
+        id: set
+        run: echo "image_tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
 
   helm-deploy:
     needs: deploy
