@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: {{ .Values.backend.name }}
-          image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+          image: {{ .Values.backend.image.repository }}{{ if .Values.backend.image.tag }}:{{ .Values.backend.image.tag }}{{ end }}
           imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.backend.ports.container }}
@@ -37,3 +37,20 @@ spec:
                 secretKeyRef:
                   name: backend-secret
                   key: session-secret
+          resources: {{ toYaml .Values.backend.resources | nindent 12 }}
+          livenessProbe:
+            {{- if .Values.backend.probes.liveness.enabled }}
+            httpGet:
+              path: {{ .Values.backend.probes.liveness.path }}
+              port: {{ .Values.backend.probes.liveness.port }}
+            {{- else }}
+            enabled: false
+            {{- end }}
+          readinessProbe:
+            {{- if .Values.backend.probes.readiness.enabled }}
+            httpGet:
+              path: {{ .Values.backend.probes.readiness.path }}
+              port: {{ .Values.backend.probes.readiness.port }}
+            {{- else }}
+            enabled: false
+            {{- end }}
