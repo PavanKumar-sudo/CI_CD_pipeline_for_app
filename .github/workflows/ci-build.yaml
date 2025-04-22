@@ -60,7 +60,7 @@ jobs:
         id: save_tag
         run: echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
 
-      - name: Save image tag as file (for logs)
+      - name: Save image tag as file (for logs/debug)
         run: echo "${{ github.sha }}" > image-tag.txt
 
       - uses: actions/upload-artifact@v4
@@ -99,17 +99,3 @@ jobs:
       status: ${{ needs.deploy.result }}
       scope: Build & Deploy
     secrets: inherit
-
-  trigger-helm-deploy:
-    needs: docker
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Trigger Helm Chart Only Workflow
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: ci-deploy.yaml
-          ref: main
-          inputs: |
-            {
-              "image_tag": "${{ needs.docker.outputs.image_tag }}"
-            }
