@@ -6,7 +6,7 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
-      - '.github/workflows/ci-build.yaml'  # ← Triggers CI when workflow is changed
+      - '.github/workflows/ci-build.yaml'
 
 env:
   NODE_VERSION: 18
@@ -56,7 +56,7 @@ jobs:
       - name: Save image tag
         run: echo "${{ github.sha }}" > image-tag.txt
 
-      - uses: actions/upload-artifact@v3.1.3
+      - uses: actions/upload-artifact@v3   # ✅ Now works with ubuntu-24.04
         with:
           name: image-tag
           path: image-tag.txt
