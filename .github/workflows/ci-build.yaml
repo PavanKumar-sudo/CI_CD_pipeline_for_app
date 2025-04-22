@@ -13,9 +13,9 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
 
       - uses: actions/setup-node@v3.8.1
         with:
@@ -23,7 +23,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
-      - name: Install backend dependencies
+      - name: Install backend deps
         working-directory: ./backend
         run: npm ci
 
@@ -32,30 +32,30 @@ jobs:
         run: npm test
 
   docker:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     needs: test
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.2.2
 
       - uses: docker/login-action@v2.2.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and tag Docker image
+      - name: Build and tag image
         run: |
           docker build -t $DOCKER_IMAGE:latest ./backend
           docker tag $DOCKER_IMAGE:latest $DOCKER_IMAGE:${{ github.sha }}
 
-      - name: Push Docker image to Docker Hub
+      - name: Push image
         run: |
           docker push $DOCKER_IMAGE:latest
           docker push $DOCKER_IMAGE:${{ github.sha }}
 
-      - name: Save image tag to file
+      - name: Save image tag
         run: echo "${{ github.sha }}" > image-tag.txt
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v3.1.3
         with:
           name: image-tag
           path: image-tag.txt
@@ -70,10 +70,10 @@ jobs:
           wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.48.4_Linux-64bit.deb
           sudo dpkg -i trivy_0.48.4_Linux-64bit.deb
 
-      - name: Scan image with Trivy
+      - name: Scan for vulnerabilities
         run: trivy image --severity HIGH,CRITICAL $DOCKER_IMAGE:${{ github.sha }} > trivy-report.txt
 
-      - name: Upload Trivy report to GitHub summary
+      - name: Upload Trivy report to summary
         run: |
           echo "### Trivy Report" >> $GITHUB_STEP_SUMMARY
           cat trivy-report.txt >> $GITHUB_STEP_SUMMARY
