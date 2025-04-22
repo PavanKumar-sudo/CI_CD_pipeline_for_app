@@ -52,7 +52,7 @@ jobs:
         run: helm template ${{ inputs.helm_release }} ./helm-chart --set backend.image.tag=${{ inputs.image_tag }}
 
       - name: Deploy with Helm
-        run: ./scripts/deploy.sh ${{ inputs.helm_release }} 1234567890abcdef
+        run: ./scripts/deploy.sh ${{ inputs.helm_release }} ${{ inputs.image_tag }}
         env:
           SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
