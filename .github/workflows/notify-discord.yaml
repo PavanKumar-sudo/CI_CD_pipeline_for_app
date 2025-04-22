@@ -14,6 +14,7 @@ jobs:
   notify:
     runs-on: ubuntu-22.04
     steps:
+      # You could optionally use `actions/checkout@v4.2.2` here if you need repo access
       - name: Send Discord Notification
         run: |
           STATUS_EMOJI="✅"
