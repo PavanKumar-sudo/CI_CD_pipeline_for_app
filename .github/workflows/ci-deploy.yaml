@@ -23,20 +23,58 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download image-tag artifact
-        if: ${{ !github.event.inputs.image_tag }}
-        uses: actions/download-artifact@v4
-        with:
-          name: image-tag
+      - name: Install jq and unzip
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq unzip
 
-      - name: Set image tag
+      - name: Get image tag from artifact or input
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ -z "${{ github.event.inputs.image_tag }}" ]; then
+            echo "Using latest successful image tag from ci-build.yaml..."
+
+            # Get latest successful run ID
+            run_id=$(curl -s -H "Authorization: token $GH_TOKEN" \
+              "https://api.github.com/repos/$REPO/actions/workflows/ci-build.yaml/runs?status=success&per_page=1" \
+              | jq -r '.workflow_runs[0].id')
+
+            if [ -z "$run_id" ]; then
+              echo "❌ No successful ci-build.yaml run found"
+              exit 1
+            fi
+
+            # Get artifact ID
+            artifact_id=$(curl -s -H "Authorization: token $GH_TOKEN" \
+              "https://api.github.com/repos/$REPO/actions/runs/$run_id/artifacts" \
+              | jq -r '.artifacts[] | select(.name=="image-tag") | .id')
+
+            if [ -z "$artifact_id" ]; then
+              echo "❌ No artifact named 'image-tag' found"
+              exit 1
+            fi
+
+            # Download and extract artifact
+            curl -L -H "Authorization: token $GH_TOKEN" \
+              -o image-tag.zip \
+              "https://api.github.com/repos/$REPO/actions/artifacts/$artifact_id/zip"
+
+            unzip -o image-tag.zip
+            image_tag=$(cat image-tag.txt)
+            echo "✅ Extracted image tag: $image_tag"
+          else
+            echo "Using manually provided image tag: ${{ github.event.inputs.image_tag }}"
+            image_tag="${{ github.event.inputs.image_tag }}"
+          fi
+
+          echo "image_tag=$image_tag" >> env.txt
+
+      - name: Set image tag output
         id: set
         run: |
-          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
-            echo "image_tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
-          else
-            echo "image_tag=$(cat image-tag.txt)" >> $GITHUB_OUTPUT
-          fi
+          source env.txt
+          echo "image_tag=$image_tag" >> $GITHUB_OUTPUT
 
       - name: Setup Helm
         uses: azure/setup-helm@v3
