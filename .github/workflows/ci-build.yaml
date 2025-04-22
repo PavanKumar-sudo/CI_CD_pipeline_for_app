@@ -6,7 +6,7 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
-      - 'helm-chart/**'
+      - '.github/workflows/ci-build.yaml'
 
 env:
   NODE_VERSION: 18
@@ -14,7 +14,7 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04  # ✅ Pinned to stable runner version
     steps:
       - uses: actions/checkout@v4.2.2
 
@@ -33,12 +33,8 @@ jobs:
         run: npm test
 
   docker:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04  # ✅ Pinned to stable runner version
     needs: test
-
-    outputs:
-      image_tag: ${{ steps.export_tag.outputs.image_tag }}
-
     steps:
       - uses: actions/checkout@v4.2.2
 
@@ -49,17 +45,20 @@ jobs:
 
       - name: Build and tag image
         run: |
-          docker build -t $DOCKER_IMAGE:latest -f backend/Dockerfile .
+          docker build -t $DOCKER_IMAGE:latest .
           docker tag $DOCKER_IMAGE:latest $DOCKER_IMAGE:${{ github.sha }}
+        working-directory: ./backend # Assuming your Dockerfile is in the backend directory
 
       - name: Push image
         run: |
           docker push $DOCKER_IMAGE:latest
           docker push $DOCKER_IMAGE:${{ github.sha }}
 
-      - name: Export output for next job
-        id: export_tag
-        run: echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+      - name: Save image tag
+        run: echo "${{ github.sha }}" > image-tag.txt
+
+      - name: Confirm image tag file exists  # ✅ Debug step
+        run: ls -l image-tag.txt
 
       - uses: actions/upload-artifact@v4
         with:
@@ -67,15 +66,17 @@ jobs:
           path: image-tag.txt
 
   trivy-scan:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-22.04  # ✅ Optional: consistency
     needs: docker
     steps:
       - name: Install Trivy
         run: |
-          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
+          sudo apt-get update && sudo apt-get install -y wget
+          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.48.4_Linux-64bit.deb
+          sudo dpkg -i trivy_0.48.4_Linux-64bit.deb
 
       - name: Scan for vulnerabilities
-        run: trivy image --severity HIGH,CRITICAL $DOCKER_IMAGE:${{ needs.docker.outputs.image_tag }} > trivy-report.txt
+        run: trivy image --severity HIGH,CRITICAL $DOCKER_IMAGE:${{ github.sha }} > trivy-report.txt
 
       - name: Upload Trivy report to summary
         run: |
@@ -87,7 +88,7 @@ jobs:
     uses: ./.github/workflows/deploy-app.yaml
     with:
       helm_release: loginapp
-      image_tag: ${{ needs.docker.outputs.image_tag }}
+      image_tag: ${{ github.sha }}
     secrets: inherit
 
   notify:
