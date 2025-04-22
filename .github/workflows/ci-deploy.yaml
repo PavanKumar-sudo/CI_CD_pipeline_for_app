@@ -9,8 +9,8 @@ on:
   workflow_dispatch:
     inputs:
       image_tag:
-        description: 'Image tag to deploy'
-        required: true
+        description: 'Image tag to deploy (Optional - leave empty to reuse last)'
+        required: false
         type: string
 
 jobs:
@@ -23,14 +23,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Download image-tag artifact
+        if: ${{ !github.event.inputs.image_tag }}
+        uses: actions/download-artifact@v4
+        with:
+          name: image-tag
+
+      - name: Set image tag
+        id: set
+        run: |
+          if [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            echo "image_tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "image_tag=$(cat image-tag.txt)" >> $GITHUB_OUTPUT
+          fi
+
       - name: Setup Helm
         uses: azure/setup-helm@v3
         with:
           version: v3.13.3
-
-      - name: Set image tag from input
-        id: set
-        run: echo "image_tag=${{ github.event.inputs.image_tag }}" >> $GITHUB_OUTPUT
 
   helm-deploy:
     needs: deploy
