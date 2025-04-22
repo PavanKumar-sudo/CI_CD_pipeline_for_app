@@ -14,7 +14,7 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # ✅ Pinned to stable runner version
     steps:
       - uses: actions/checkout@v4.2.2
 
@@ -33,7 +33,7 @@ jobs:
         run: npm test
 
   docker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # ✅ Pinned to stable runner version
     needs: test
     steps:
       - uses: actions/checkout@v4.2.2
@@ -56,13 +56,16 @@ jobs:
       - name: Save image tag
         run: echo "${{ github.sha }}" > image-tag.txt
 
-      - uses: actions/upload-artifact@v3   # ✅ Now works with ubuntu-24.04
+      - name: Confirm image tag file exists  # ✅ Debug step
+        run: ls -l image-tag.txt
+
+      - uses: actions/upload-artifact@v3   # ✅ Use major version only
         with:
           name: image-tag
           path: image-tag.txt
 
   trivy-scan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04  # ✅ Optional: consistency
     needs: docker
     steps:
       - name: Install Trivy
