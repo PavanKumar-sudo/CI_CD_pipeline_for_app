@@ -6,7 +6,6 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
-      - 'helm-chart/**'
 
 env:
   NODE_VERSION: 18
