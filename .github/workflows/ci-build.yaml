@@ -13,7 +13,7 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4.1.1
 
@@ -32,7 +32,7 @@ jobs:
         run: npm test
 
   docker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: test
     steps:
       - uses: actions/checkout@v4.1.1
@@ -55,7 +55,7 @@ jobs:
       - name: Save image tag to file
         run: echo "${{ github.sha }}" > image-tag.txt
 
-      - uses: actions/upload-artifact@v3.1.3
+      - uses: actions/upload-artifact@v3
         with:
           name: image-tag
           path: image-tag.txt
