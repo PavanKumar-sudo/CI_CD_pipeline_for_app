@@ -37,7 +37,7 @@ jobs:
     needs: test
 
     outputs:
-      image_tag: ${{ steps.save_tag.outputs.image_tag }}
+      image_tag: ${{ steps.export_tag.outputs.image_tag }}
 
     steps:
       - uses: actions/checkout@v4.2.2
@@ -57,12 +57,15 @@ jobs:
           docker push $DOCKER_IMAGE:latest
           docker push $DOCKER_IMAGE:${{ github.sha }}
 
-      - name: Save image tag to output
-        id: save_tag
-        run: echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
-
-      - name: Save image tag as file (for logs/debug)
+      - name: Save image tag to file
         run: echo "${{ github.sha }}" > image-tag.txt
+
+      - name: Set image tag in env
+        run: echo "IMAGE_TAG=${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Export output for next job
+        id: export_tag
+        run: echo "image_tag=${{ env.IMAGE_TAG }}" >> $GITHUB_OUTPUT
 
       - uses: actions/upload-artifact@v4
         with:
