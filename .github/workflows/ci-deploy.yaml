@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'helm-chart/**'
+      - '.github/workflows/ci-deploy.yaml'
 
 jobs:
   deploy:
