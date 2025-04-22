@@ -6,7 +6,7 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
-      - '.github/workflows/ci-build.yaml'
+      - 'helm-chart/**'
 
 env:
   NODE_VERSION: 18
@@ -14,7 +14,7 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04  # ✅ Pinned to stable runner version
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4.2.2
 
@@ -24,7 +24,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
-      - name: Install backend deps
+      - name: Install backend dependencies
         working-directory: ./backend
         run: npm ci
 
@@ -33,8 +33,12 @@ jobs:
         run: npm test
 
   docker:
-    runs-on: ubuntu-22.04  # ✅ Pinned to stable runner version
+    runs-on: ubuntu-22.04
     needs: test
+
+    outputs:
+      image_tag: ${{ steps.export_tag.outputs.image_tag }}
+
     steps:
       - uses: actions/checkout@v4.2.2
 
@@ -45,20 +49,20 @@ jobs:
 
       - name: Build and tag image
         run: |
-          docker build -t $DOCKER_IMAGE:latest .
+          docker build -t $DOCKER_IMAGE:latest -f backend/Dockerfile .
           docker tag $DOCKER_IMAGE:latest $DOCKER_IMAGE:${{ github.sha }}
-        working-directory: ./backend # Assuming your Dockerfile is in the backend directory
 
-      - name: Push image
+      - name: Push Docker image
         run: |
           docker push $DOCKER_IMAGE:latest
           docker push $DOCKER_IMAGE:${{ github.sha }}
 
-      - name: Save image tag
-        run: echo "${{ github.sha }}" > image-tag.txt
+      - name: Export output for next job
+        id: export_tag
+        run: echo "image_tag=${{ github.sha }}" >> $GITHUB_OUTPUT
 
-      - name: Confirm image tag file exists  # ✅ Debug step
-        run: ls -l image-tag.txt
+      - name: Save image tag to file
+        run: echo "${{ github.sha }}" > image-tag.txt
 
       - uses: actions/upload-artifact@v4
         with:
@@ -66,19 +70,17 @@ jobs:
           path: image-tag.txt
 
   trivy-scan:
-    runs-on: ubuntu-22.04  # ✅ Optional: consistency
+    runs-on: ubuntu-22.04
     needs: docker
     steps:
       - name: Install Trivy
         run: |
-          sudo apt-get update && sudo apt-get install -y wget
-          wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.48.4_Linux-64bit.deb
-          sudo dpkg -i trivy_0.48.4_Linux-64bit.deb
+          curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
 
-      - name: Scan for vulnerabilities
-        run: trivy image --severity HIGH,CRITICAL $DOCKER_IMAGE:${{ github.sha }} > trivy-report.txt
+      - name: Scan image with Trivy
+        run: trivy image --severity HIGH,CRITICAL $DOCKER_IMAGE:${{ needs.docker.outputs.image_tag }} > trivy-report.txt
 
-      - name: Upload Trivy report to summary
+      - name: Upload Trivy report to GitHub summary
         run: |
           echo "### Trivy Report" >> $GITHUB_STEP_SUMMARY
           cat trivy-report.txt >> $GITHUB_STEP_SUMMARY
@@ -88,7 +90,7 @@ jobs:
     uses: ./.github/workflows/deploy-app.yaml
     with:
       helm_release: loginapp
-      image_tag: ${{ github.sha }}
+      image_tag: ${{ needs.docker.outputs.image_tag }}
     secrets: inherit
 
   notify:
