@@ -6,7 +6,6 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
-      - '.github/workflows/ci-build.yaml'
 
 env:
   NODE_VERSION: 18
@@ -111,4 +110,6 @@ jobs:
           workflow: ci-deploy.yaml
           ref: main
           inputs: |
-            image_tag=${{ needs.docker.outputs.image_tag }}
+            {
+              "image_tag": "${{ needs.docker.outputs.image_tag }}"
+            }
