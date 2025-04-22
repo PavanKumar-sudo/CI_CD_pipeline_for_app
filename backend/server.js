@@ -74,6 +74,15 @@ app.get('/routes', (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname, 'views')));
 
+// === Health and Readiness Probes === //
+app.get('/healthz', (req, res) => {
+  res.sendStatus(200);
+});
+
+app.get('/ready', (req, res) => {
+  res.sendStatus(200);
+});
+
 // === Export for test, and start server only if run directly === //
 if (require.main === module) {
   const port = process.env.PORT || 3000;
