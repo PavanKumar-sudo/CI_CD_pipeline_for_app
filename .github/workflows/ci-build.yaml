@@ -10,6 +10,7 @@ on:
 env:
   NODE_VERSION: 18
   DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/backend
+  DOMAIN: go-web-app.local  # 🔁 Change this for staging/prod (e.g., myapp.com)
 
 jobs:
   test:
@@ -68,6 +69,32 @@ jobs:
           name: image-tag
           path: image-tag.txt
 
+generate-values:
+  runs-on: ubuntu-22.04
+  needs: docker
+  steps:
+    - uses: actions/checkout@v4
+
+    - name: Generate values-ci.yaml for ArgoCD
+      run: |
+        echo "backend:" > helm-chart/values-ci.yaml
+        echo "  image:" >> helm-chart/values-ci.yaml
+        echo "    tag: \"${{ needs.docker.outputs.image_tag }}\"" >> helm-chart/values-ci.yaml
+        echo "  sessionSecret: \"${{ secrets.SESSION_SECRET }}\"" >> helm-chart/values-ci.yaml
+        echo "smtpAuth:" >> helm-chart/values-ci.yaml
+        echo "  username: \"${{ secrets.SMTP_USERNAME }}\"" >> helm-chart/values-ci.yaml
+        echo "  password: \"${{ secrets.SMTP_PASSWORD }}\"" >> helm-chart/values-ci.yaml
+        echo "global:" >> helm-chart/values-ci.yaml
+        echo "  domain: \"${{ env.DOMAIN }}\"" >> helm-chart/values-ci.yaml
+
+      - name: Commit values-ci.yaml to Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "ci@github.com"
+          git add helm-chart/values-ci.yaml
+          git commit -m "🔁 Update Helm values-ci.yaml for ArgoCD sync"
+          git push
+
   trivy-scan:
     runs-on: ubuntu-22.04
     needs: docker
@@ -84,18 +111,10 @@ jobs:
           echo "### Trivy Report" >> $GITHUB_STEP_SUMMARY
           cat trivy-report.txt >> $GITHUB_STEP_SUMMARY
 
-  deploy:
-    needs: [docker, trivy-scan]
-    uses: ./.github/workflows/deploy-app.yaml
-    with:
-      helm_release: loginapp
-      image_tag: ${{ needs.docker.outputs.image_tag }}
-    secrets: inherit
-
   notify:
-    needs: deploy
+    needs: [generate-values, trivy-scan]
     uses: ./.github/workflows/notify-discord.yaml
     with:
-      status: ${{ needs.deploy.result }}
-      scope: Build & Deploy
+      status: success
+      scope: Build & Push + ArgoCD Sync
     secrets: inherit
