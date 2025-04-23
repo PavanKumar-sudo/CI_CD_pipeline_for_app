@@ -112,7 +112,7 @@ jobs:
           cat trivy-report.txt >> $GITHUB_STEP_SUMMARY
 
   deploy:
-    needs: [generate-values, trivy-scan]
+    needs: [generate-values, trivy-scan, docker]
     uses: ./.github/workflows/deploy-app.yaml
     with:
       helm_release: loginapp
