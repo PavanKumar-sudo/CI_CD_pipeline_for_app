@@ -9,6 +9,9 @@ on:
       helm_release:
         required: true
         type: string
+      domain:               
+        required: true
+        type: string
 
     secrets:
       SESSION_SECRET:
