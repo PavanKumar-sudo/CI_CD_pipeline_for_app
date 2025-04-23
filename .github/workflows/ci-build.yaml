@@ -117,6 +117,7 @@ jobs:
     with:
       helm_release: loginapp
       image_tag: ${{ needs.docker.outputs.image_tag }}
+      domain: ${{ env.DOMAIN }}
     secrets: inherit
 
   notify:
