@@ -19,10 +19,10 @@ spec:
             description: "Backend received more than 1 req/sec in the last minute."
 
         - alert: HighBackendCPUUsage
-          expr: rate(process_cpu_seconds_total{container="{{ .Values.backend.name }}"}[2m]) > 0.8
-          for: 2m
+          expr: rate(process_cpu_seconds_total{container="{{ .Values.backend.name }}"}[2m]) > 2.0
+          for: 4m
           labels:
             severity: critical
           annotations:
             summary: "High CPU usage in backend"
-            description: "CPU usage > 80% for more than 2 minutes"
+            description: "CPU usage > 200% for more than 4 minutes"
