@@ -1,9 +1,9 @@
 backend:
   image:
-    tag: "42bd3740577b5db23b9e36256836043406fbafa0"
+    tag: "d6ba314d6e491f9359014c89e042c77f34fbf448"
   sessionSecret: "f8287695e1fd6fd3ab624e2fc75fd2ee0d2197fc474be6a3a105c0abeba7f507"
 smtpAuth:
   username: "pavanvinjamuri212@gmail.com"
   password: "xalnsvggdpvfvvot"
 global:
-  domain: ""
+  domain: "go-web-app.local"
