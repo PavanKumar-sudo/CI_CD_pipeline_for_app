@@ -10,6 +10,7 @@ on:
 env:
   NODE_VERSION: 18
   DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/backend
+  DOMAIN: go-web-app.local 
 
 jobs:
   test:
