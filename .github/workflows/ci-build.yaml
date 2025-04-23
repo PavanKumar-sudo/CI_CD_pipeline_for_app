@@ -10,7 +10,6 @@ on:
 env:
   NODE_VERSION: 18
   DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/backend
-  DOMAIN: go-web-app.local  # 🔁 Change this for staging/prod (e.g., myapp.com)
 
 jobs:
   test:
@@ -117,7 +116,6 @@ jobs:
     with:
       helm_release: loginapp
       image_tag: ${{ needs.docker.outputs.image_tag }}
-      domain: ${{ env.DOMAIN }}
     secrets: inherit
 
   notify:
