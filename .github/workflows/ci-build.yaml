@@ -69,23 +69,23 @@ jobs:
           name: image-tag
           path: image-tag.txt
 
-generate-values:
-  runs-on: ubuntu-22.04
-  needs: docker
-  steps:
-    - uses: actions/checkout@v4
+  generate-values:
+    runs-on: ubuntu-22.04
+    needs: docker
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Generate values-ci.yaml for ArgoCD
-      run: |
-        echo "backend:" > helm-chart/values-ci.yaml
-        echo "  image:" >> helm-chart/values-ci.yaml
-        echo "    tag: \"${{ needs.docker.outputs.image_tag }}\"" >> helm-chart/values-ci.yaml
-        echo "  sessionSecret: \"${{ secrets.SESSION_SECRET }}\"" >> helm-chart/values-ci.yaml
-        echo "smtpAuth:" >> helm-chart/values-ci.yaml
-        echo "  username: \"${{ secrets.SMTP_USERNAME }}\"" >> helm-chart/values-ci.yaml
-        echo "  password: \"${{ secrets.SMTP_PASSWORD }}\"" >> helm-chart/values-ci.yaml
-        echo "global:" >> helm-chart/values-ci.yaml
-        echo "  domain: \"${{ env.DOMAIN }}\"" >> helm-chart/values-ci.yaml
+      - name: Generate values-ci.yaml for ArgoCD
+        run: |
+          echo "backend:" > helm-chart/values-ci.yaml
+          echo "  image:" >> helm-chart/values-ci.yaml
+          echo "    tag: \"${{ needs.docker.outputs.image_tag }}\"" >> helm-chart/values-ci.yaml
+          echo "  sessionSecret: \"${{ secrets.SESSION_SECRET }}\"" >> helm-chart/values-ci.yaml
+          echo "smtpAuth:" >> helm-chart/values-ci.yaml
+          echo "  username: \"${{ secrets.SMTP_USERNAME }}\"" >> helm-chart/values-ci.yaml
+          echo "  password: \"${{ secrets.SMTP_PASSWORD }}\"" >> helm-chart/values-ci.yaml
+          echo "global:" >> helm-chart/values-ci.yaml
+          echo "  domain: \"${{ env.DOMAIN }}\"" >> helm-chart/values-ci.yaml
 
       - name: Commit values-ci.yaml to Git
         run: |
