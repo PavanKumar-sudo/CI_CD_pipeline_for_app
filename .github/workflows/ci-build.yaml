@@ -111,8 +111,16 @@ jobs:
           echo "### Trivy Report" >> $GITHUB_STEP_SUMMARY
           cat trivy-report.txt >> $GITHUB_STEP_SUMMARY
 
-  notify:
+  deploy:
     needs: [generate-values, trivy-scan]
+    uses: ./.github/workflows/deploy-app.yaml
+    with:
+      helm_release: loginapp
+      image_tag: ${{ needs.docker.outputs.image_tag }}
+    secrets: inherit
+
+  notify:
+    needs: deploy
     uses: ./.github/workflows/notify-discord.yaml
     with:
       status: success
