@@ -1,6 +1,6 @@
 backend:
   image:
-    tag: "d6ba314d6e491f9359014c89e042c77f34fbf448"
+    tag: "bda7ac1145fe524ade7b8f7ebcd83ba4848dbdc7"
   sessionSecret: "f8287695e1fd6fd3ab624e2fc75fd2ee0d2197fc474be6a3a105c0abeba7f507"
 smtpAuth:
   username: "pavanvinjamuri212@gmail.com"
