@@ -1,18 +1,19 @@
 global:
   namespace: monitoring
-  domain: go-web-app.local  # ✅ Can be overridden via --set in CI/CD
+  domain: go-web-app.local
 
 backend:
   image:
     repository: pavankumar23/backend
-    tag: v1.0.0              # ✅ Will be overridden in CI with --set
-    pullPolicy: Always       # ✅ Forces latest image pull in CI/CD
+    tag: v1.0.0
+    pullPolicy: Always
 
   name: backend
   secretName: backend-secret
-  sessionSecret: secret123   # 🔄 Default, overridden securely in CI/CD
+  sessionSecret: secret123
 
   replicas: 1
+
   ports:
     container: 3001
     service: 3001
@@ -83,8 +84,8 @@ ingress:
   host: "{{ .Values.global.domain }}"
 
 smtpAuth:
-  username: pavanvinjamuri212@gmail.com     # 🔄 Default, overridden in CI/CD
-  password: apppassword_from_ci_or_secret   # 🔄 Default, overridden in CI/CD
+  username: pavanvinjamuri212@gmail.com
+  password: apppassword_from_ci_or_secret
 
 kube-prometheus-stack:
   grafana:
@@ -108,14 +109,11 @@ kube-prometheus-stack:
       serviceMonitorSelector:
         matchLabels:
           release: loginapp
-      serviceMonitorNamespaceSelector:
-        matchNames:
-          - default
-          - monitoring
+      serviceMonitorNamespaceSelector: {}  # ✅ FIXED: Match all namespaces, avoids schema error
 
   alertmanager:
     enabled: true
     alertmanagerSpec:
       externalUrl: "http://alertmanager.{{ .Values.global.domain }}"
       replicas: 1
-      configSecret: loginapp-alertmanager-config  # ✅ Loads config from rendered Secret
+      configSecret: loginapp-alertmanager-config
