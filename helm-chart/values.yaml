@@ -109,10 +109,7 @@ kube-prometheus-stack:
       serviceMonitorSelector:
         matchLabels:
           release: loginapp
-      serviceMonitorNamespaceSelector:
-        matchNames:
-          - default
-          - monitoring
+      serviceMonitorNamespaceSelector:{}
 
   alertmanager:
     enabled: true
