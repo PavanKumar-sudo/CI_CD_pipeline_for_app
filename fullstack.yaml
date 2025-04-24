@@ -1,148 +1,33 @@
-# Namespace
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: fullstack-app
-
----
-
-# MySQL Deployment
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: mysql
-  namespace: fullstack-app
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: mysql
-  template:
-    metadata:
-      labels:
-        app: mysql
-    spec:
-      containers:
-      - name: mysql
-        image: mysql:5.7
-        env:
-        - name: MYSQL_ROOT_PASSWORD
-          value: Masters@2026
-        - name: MYSQL_DATABASE
-          value: loginapp
-        ports:
-        - containerPort: 3306
-        volumeMounts:
-        - name: mysql-pv
-          mountPath: /var/lib/mysql
-        - name: init-script
-          mountPath: /docker-entrypoint-initdb.d/init.sql
-          subPath: init.sql
-      volumes:
-      - name: mysql-pv
-        emptyDir: {}
-      - name: init-script
-        configMap:
-          name: mysql-init
-      tolerations:
-      - key: "eks.amazonaws.com/compute-type"
-        operator: "Equal"
-        value: "fargate"
-        effect: "NoSchedule"
-
----
-
-# MySQL Service
-apiVersion: v1
-kind: Service
-metadata:
-  name: mysql
-  namespace: fullstack-app
-spec:
-  selector:
-    app: mysql
-  ports:
-    - port: 3306
-  clusterIP: None
-
----
-
-# Full-stack App Deployment (Frontend + Backend Combined)
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: full-app
-  namespace: fullstack-app
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: full-app
-  template:
-    metadata:
-      labels:
-        app: full-app
-    spec:
-      containers:
-      - name: full-app
-        image: 535002879757.dkr.ecr.us-east-1.amazonaws.com/full-app:latest
-        ports:
-        - containerPort: 3000
-        env:
-        - name: DB_HOST
-          value: mysql
-        - name: DB_USER
-          value: root
-        - name: DB_PASSWORD
-          value: Masters@2026
-        - name: DB_NAME
-          value: loginapp
-        - name: SESSION_SECRET
-          value: secret123
-      tolerations:
-      - key: "eks.amazonaws.com/compute-type"
-        operator: "Equal"
-        value: "fargate"
-        effect: "NoSchedule"
-
----
-
-# Full App Service (Exposes Backend)
-apiVersion: v1
-kind: Service
-metadata:
-  name: full-app
-  namespace: fullstack-app
-spec:
-  selector:
-    app: full-app
-  ports:
-    - port: 3000
-      targetPort: 3000
-
----
-
-# Ingress (ALB)
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: fullstack-ingress
-  namespace: fullstack-app
-  annotations:
-    kubernetes.io/ingress.class: alb
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'   # ← Add this line
-spec:
-  ingressClassName: alb
-  rules:
-    - http:
-        paths:
-        - path: /
-          pathType: Prefix
-          backend:
-            service:
-              name: full-app
-              port:
-                number: 3000
-
+project: default
+source:
+  repoURL: https://github.com/PavanKumar-sudo/CI_CD_pipeline_for_app.git
+  path: helm-chart
+  targetRevision: HEAD
+  helm:
+    valueFiles:
+      - values-ci.yaml
+destination:
+  server: https://kubernetes.default.svc
+  namespace: monitoring
+syncPolicy:
+  automated:
+    prune: true
+    selfHeal: true
+  syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true
+ignoreDifferences:
+  - group: admissionregistration.k8s.io
+    kind: MutatingWebhookConfiguration
+    name: loginapp-kube-prometheus-s-admission
+  - group: admissionregistration.k8s.io
+    kind: ValidatingWebhookConfiguration
+    name: loginapp-kube-prometheus-s-admission
+  - group: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: loginapp-kube-prometheus-s-admission
+  - group: rbac.authorization.k8s.io
+    kind: ClusterRoleBinding
+    name: loginapp-kube-prometheus-s-admission
+  - kind: ServiceAccount
+    name: loginapp-kube-prometheus-s-admission
