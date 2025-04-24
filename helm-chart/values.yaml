@@ -98,11 +98,24 @@ kube-prometheus-stack:
       serviceMonitorSelector:
         matchLabels:
           release: loginapp
-      serviceMonitorNamespaceSelector: {}  # ✅ This is last under prometheusSpec
+      serviceMonitorNamespaceSelector: {}
 
   alertmanager:
     enabled: true
     alertmanagerSpec:
       externalUrl: "http://alertmanager.{{ .Values.global.domain }}"
       replicas: 1
-      configSecret: loginapp-alertmanager-config  # ✅ Loads alertmanager config
+      configSecret: loginapp-alertmanager-config
+
+  prometheus-node-exporter:  # ✅ Correctly aligned
+    hostRootFsMount:
+      enabled: true
+    extraArgs:
+      - --web.listen-address=0.0.0.0:9100
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
