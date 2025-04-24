@@ -88,17 +88,6 @@ smtpAuth:
   password: apppassword_from_ci_or_secret   # 🔄 Default, overridden in CI/CD
 
 kube-prometheus-stack:
-  grafana:
-    enabled: true
-    grafana.ini:
-      server:
-        root_url: "http://grafana.{{ .Values.global.domain }}"
-      smtp:
-        enabled: true
-        host: smtp.gmail.com:587
-        from_address: pavanvinjamuri212@gmail.com
-        startTLS_policy: "Always"
-
   prometheus:
     enabled: true
     prometheusSpec:
@@ -109,11 +98,11 @@ kube-prometheus-stack:
       serviceMonitorSelector:
         matchLabels:
           release: loginapp
-      serviceMonitorNamespaceSelector:{}
+      serviceMonitorNamespaceSelector: {}  # ✅ This is last under prometheusSpec
 
   alertmanager:
     enabled: true
     alertmanagerSpec:
       externalUrl: "http://alertmanager.{{ .Values.global.domain }}"
       replicas: 1
-      configSecret: loginapp-alertmanager-config  # ✅ Loads config from rendered Secret
+      configSecret: loginapp-alertmanager-config  # ✅ Loads alertmanager config
