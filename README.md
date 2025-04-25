@@ -185,9 +185,9 @@ Until here the manual steps are completed you need to do this manual steps for f
 ### 11 CI/CD Validation
 ## CI pipeline
 To run the ci pipeline we used 2 requirement 
-1. you need to just change the frontend or backend the trigger GitHub Actions CI will build Docker, scan with Trivy, upgrade Helm, and send Discord alert
-2. if anyone change the hel-chart files the trigger GitHub Actions CI will directly deploy the helm with the pervious docker image tag version and send discord alert
-now before running the code you neeed to add the all secret like username,password for email,SESSION_SECRET and discord link to get the discor link just create a account in discord and  create a discord server and go to server settings and under app there is intergration and click on webhook then select the link and paste in the github secret.
+1. you need to just change the frontend or backend that trigger GitHub Actions CI will build Docker, scan with Trivy, upgrade Helm, and send Discord alert
+2. if anyone change the hel-chart files that trigger GitHub Actions CI will directly deploy the helm with the pervious docker image tag version and send discord alert
+now before running the code you neeed to add the all secret like username,password for email,SESSION_SECRET and discord link to get the discord link just create a account in discord and  create a discord server and go to server settings and under app there is intergration and click on webhook then select the link and paste in the github secret.
 you need to add this like:
 ![image](https://github.com/user-attachments/assets/8865c9fc-be6b-4b7c-960f-10ca88623a9f)
 once you added run the code by changing the values in frontend and go to action you can check the trigger will flow and you will see below output then your ci part is completed
